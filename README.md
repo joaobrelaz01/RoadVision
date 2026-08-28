@@ -1,61 +1,49 @@
-
 # 🚗 RoadVision
 
-Sistema de monitoramento inteligente de rodovias utilizando câmeras do DER, visão computacional e Inteligência Artificial.
+> Sistema inteligente de monitoramento de rodovias utilizando Visão Computacional e Inteligência Artificial.
+
+## 📌 Sobre o projeto
+
+O **RoadVision** é um projeto voltado ao monitoramento inteligente de rodovias por meio da análise de imagens provenientes de câmeras rodoviárias.
+
+A proposta é utilizar técnicas de **Visão Computacional** e **Inteligência Artificial** para transformar imagens das rodovias em informações úteis para o monitoramento do tráfego.
+
+O sistema está sendo desenvolvido inicialmente com foco na identificação e análise de veículos presentes nas imagens das câmeras.
+
+---
 
 ## 🎯 Objetivo
 
-Desenvolver um sistema capaz de analisar imagens provenientes de câmeras rodoviárias para:
+Desenvolver uma solução capaz de auxiliar no monitoramento de rodovias através da análise automatizada das imagens das câmeras.
 
-- Detectar veículos;
-- Classificar veículos;
-- Contabilizar o fluxo de veículos;
-- Identificar o sentido do tráfego;
-- Armazenar os dados coletados;
-- Disponibilizar informações para análise em dashboard;
-- Futuramente identificar padrões de fluxo utilizando IA.
+Entre as funcionalidades planejadas estão:
 
-## 🏗️ Arquitetura planejada
+- 🚗 Identificação de veículos;
+- 🏍️ Classificação dos tipos de veículos;
+- 📊 Contagem de veículos;
+- ↔️ Identificação do sentido do tráfego;
+- 📈 Análise do fluxo de veículos;
+- 🚨 Identificação de possíveis situações anormais;
+- 📊 Geração de informações para acompanhamento do tráfego.
 
-Câmeras DER
-↓
-Captura de frames
-↓
-Python + OpenCV
-↓
-YOLO
-↓
-Detecção e contagem de veículos
-↓
-API
-↓
-Banco de dados
-↓
-Dashboard
-↓
-Análise histórica e IA
+---
 
-## 🛠️ Tecnologias
+## 🧠 Como o sistema funciona
 
-- Python 3.12
-- OpenCV
-- Ultralytics YOLO
-- PyTorch
-- Playwright
-- Git
-- GitHub
-- VS Code
-
-## 📁 Estrutura do projeto
+De forma simplificada, o funcionamento esperado do RoadVision é:
 
 ```text
-RoadVision/
-├── data/          # Dados utilizados pelo projeto
-├── models/        # Modelos de IA
-├── src/           # Código principal
-├── tests/         # Testes automatizados
-├── .gitignore
-├── requirements.txt
-├── teste.py
-└── README.md
+📹 Câmera da rodovia
+        ↓
+📡 Captura da imagem
+        ↓
+🖥️ Processamento
+        ↓
+🤖 Inteligência Artificial
+        ↓
+🚗 Detecção dos veículos
+        ↓
+📊 Análise dos dados
+        ↓
+📈 Informações sobre o tráfego
 ```
