@@ -8,18 +8,22 @@ O **RoadVision** é um projeto voltado ao monitoramento inteligente de rodovias 
 
 A proposta é utilizar técnicas de **Visão Computacional** e **Inteligência Artificial** para transformar imagens das rodovias em informações úteis para o monitoramento do tráfego.
 
-O sistema está sendo desenvolvido inicialmente com foco na identificação e análise de veículos presentes nas imagens das câmeras.
+O sistema está sendo desenvolvido inicialmente com foco na identificação e análise de veículos presentes nas imagens das câmeras do **DER/SP**.
 
 ---
 
 ## 🎯 Objetivo
 
-Desenvolver uma solução capaz de auxiliar no monitoramento de rodovias através da análise automatizada das imagens das câmeras.
+Desenvolver uma solução capaz de auxiliar concessionárias e órgãos responsáveis pelo monitoramento rodoviário, transformando imagens das câmeras em informações úteis para acompanhamento e tomada de decisão.
 
-Entre as funcionalidades planejadas estão:
+---
+
+## 🚀 Funcionalidades planejadas
 
 - 🚗 Identificação de veículos;
 - 🏍️ Classificação dos tipos de veículos;
+- 🚌 Identificação de ônibus;
+- 🚚 Identificação de caminhões;
 - 📊 Contagem de veículos;
 - ↔️ Identificação do sentido do tráfego;
 - 📈 Análise do fluxo de veículos;
@@ -41,9 +45,9 @@ De forma simplificada, o funcionamento esperado do RoadVision é:
         ↓
 🤖 Inteligência Artificial
         ↓
-🚗 Detecção dos veículos
+🚗 Detecção e classificação dos veículos
         ↓
-📊 Análise dos dados
+📊 Análise do fluxo
         ↓
-📈 Informações sobre o tráfego
+📈 Geração de informações
 ```
