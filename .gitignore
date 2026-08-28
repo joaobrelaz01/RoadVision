@@ -22,8 +22,6 @@ data/*
 # Arquivos do sistema
 .DS_Store
 Thumbs.db
-# Apresentação
-Apresentação RoadVision/
 
-# Apresentações
-*.pptx
+# ApresentaÃ§Ã£o
+ApresentaÃ§Ã£o RoadVision/
