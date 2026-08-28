@@ -1,0 +1,29 @@
+# Ambiente virtual
+.venv/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+
+# VS Code
+.vscode/
+
+# VariÃ¡veis de ambiente
+.env
+.env.*
+
+# Modelos YOLO
+*.pt
+
+# Dados gerados
+data/*
+!data/.gitkeep
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+# Apresentação
+Apresentação RoadVision/
+
+# Apresentações
+*.pptx
