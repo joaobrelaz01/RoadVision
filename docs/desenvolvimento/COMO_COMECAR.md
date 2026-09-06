@@ -1,4 +1,3 @@
-
 # 🚀 Como Começar no RoadVision
 
 Este documento apresenta o passo a passo para um novo integrante começar a trabalhar no projeto RoadVision.
