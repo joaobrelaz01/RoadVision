@@ -1,0 +1,114 @@
+{
+    "cameras": [
+        {
+            "id": 36,
+            "km": "055+000",
+            "nome": "KM 055+000 - Maranduba",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_36/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 5,
+            "km": "073+000",
+            "nome": "KM 073+000 - Maranduba",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_5/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 38,
+            "km": "083+500",
+            "nome": "KM 083+500 - Maranduba",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_38/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 37,
+            "km": "092+500",
+            "nome": "KM 092+500 - Caraguatatuba",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_37/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 8,
+            "km": "110+000",
+            "nome": "KM 110+000 - São Sebastião",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_8/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 9,
+            "km": "110+000",
+            "nome": "KM 110+000 - Massaguaçu",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_9/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 10,
+            "km": "136+000",
+            "nome": "KM 136+000 - Caraguatatuba",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_10/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 11,
+            "km": "168+000",
+            "nome": "KM 168+000 - Bertioga",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_11/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 12,
+            "km": "193+000",
+            "nome": "KM 193+000 - São Sebastião",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_12/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 13,
+            "km": "211+000",
+            "nome": "KM 211+000 - Bertioga",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_13/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        },
+        {
+            "id": 14,
+            "km": "211+000",
+            "nome": "KM 211+000 - Bertioga",
+            "stream_url": "http://200.144.30.103:8084/hls/cam_14/stream.m3u8",
+            "resolucao": {
+                "largura": 704,
+                "altura": 480
+            }
+        }
+    ]
+}
