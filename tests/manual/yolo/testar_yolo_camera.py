@@ -1,5 +1,6 @@
 import cv2
 from ultralytics import YOLO
+from pathlib import Path
 
 
 # ============================================================
@@ -9,7 +10,7 @@ from ultralytics import YOLO
 STREAM_URL = "http://200.144.30.103:8084/hls/cam_14/stream.m3u8"
 
 # Modelo pequeno para o primeiro teste
-MODEL_PATH = "yolo11n.pt"
+MODEL_PATH = Path(__file__).resolve().parents[3] / "models" / "yolo11n.pt"
 
 
 # ============================================================

@@ -1,6 +1,7 @@
 import cv2
 import time
 import threading
+from pathlib import Path
 from ultralytics import YOLO
 
 
@@ -128,7 +129,7 @@ print("=" * 70)
 print()
 print("🤖 Carregando YOLO...")
 
-model = YOLO("yolo11n.pt")
+model = YOLO(Path(__file__).resolve().parents[3] / "models" / "yolo11n.pt")
 
 print("✅ Modelo carregado!")
 print()

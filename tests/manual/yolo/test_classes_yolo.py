@@ -1,5 +1,6 @@
 import cv2
 from ultralytics import YOLO
+from pathlib import Path
 
 CAMERA_ID = 14
 
@@ -7,7 +8,7 @@ URL = f"http://200.144.30.103:8084/hls/cam_{CAMERA_ID}/stream.m3u8"
 
 print("🤖 Carregando YOLO...")
 
-model = YOLO("yolo11n.pt")
+model = YOLO(Path(__file__).resolve().parents[3] / "models" / "yolo11n.pt")
 
 print("✅ Modelo carregado!")
 

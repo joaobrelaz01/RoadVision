@@ -1,10 +1,11 @@
 import cv2
 from ultralytics import YOLO
+from pathlib import Path
 
 
 STREAM_URL = "http://200.144.30.103:8084/hls/cam_12/stream.m3u8"
 
-MODEL_PATH = "yolo11n.pt"
+MODEL_PATH = Path(__file__).resolve().parents[3] / "models" / "yolo11n.pt"
 
 # Classes que queremos considerar como veículos
 VEICULOS = {

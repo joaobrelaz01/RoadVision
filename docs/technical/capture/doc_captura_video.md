@@ -77,9 +77,10 @@ A funcionalidade será considerada concluída quando:
 ## 8. Estrutura prevista
 
 ```text
-desenvolvimento/
-└── captura/
-    ├── captura_video.md
+src/
+└── roadvision/
+    ├── capture/
+        ├── captura_video.py
     └── ...
 ```
 
@@ -136,7 +137,7 @@ Para a validação inicial foi utilizada a câmera:
 
 Foi criado o arquivo:
 
-`desenvolvimento/captura/capturar_video.py`
+`src/roadvision/capture/captura_video.py`
 
 A implementação utiliza o `cv2.VideoCapture()` para estabelecer a conexão com o stream da câmera.
 
