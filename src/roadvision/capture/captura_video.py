@@ -1,9 +1,10 @@
 # Importando bibliotecas json e OpenCV (cv2) para manipulação de arquivos JSON e captura de vídeo.
 import json
 import cv2
+from pathlib import Path
 
 # Definindo o caminho do arquivo JSON que contém as informações das câmeras.
-CAMERAS_PATH = "configs/cameras/cameras.json"
+CAMERAS_PATH = Path(__file__).resolve().parents[3] / "configs" / "cameras" / "cameras.json"
 
 # Criando uma função chamada carregar_cameras() que irá ler o arquivo JSON especificado em CAMERAS_PATH e retornar os dados contidos nele.
 def carregar_cameras():
