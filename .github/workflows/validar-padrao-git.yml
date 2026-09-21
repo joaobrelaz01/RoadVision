@@ -1,11 +1,12 @@
 name: Validar padrão Git
 
 on:
-  push:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 jobs:
-  validar-commit:
-    name: Validar mensagem do commit
+  validar-pr:
+    name: Validar Pull Request
     runs-on: ubuntu-latest
 
     steps:
@@ -14,20 +15,44 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validar último commit
+      - name: Validar título da PR
         shell: bash
         run: |
-          COMMIT_MESSAGE=$(git log -1 --pretty=%s)
+          PR_TITLE="${{ github.event.pull_request.title }}"
 
-          echo "Commit analisado:"
-          echo "$COMMIT_MESSAGE"
+          echo "Título da PR:"
+          echo "$PR_TITLE"
 
-          if [[ "$COMMIT_MESSAGE" =~ ^ROAD-[0-9]+:\ .+ ]]; then
-            echo "✅ Commit segue o padrão."
+          if [[ "$PR_TITLE" =~ ^ROAD-[0-9]+:\ .+ ]]; then
+            echo "✅ Título da PR segue o padrão."
           else
-            echo "❌ Commit fora do padrão."
+            echo "❌ Título da PR fora do padrão."
             echo ""
             echo "Formato esperado:"
             echo "ROAD-123: descrição curta"
             exit 1
           fi
+
+      - name: Validar commits da PR
+        shell: bash
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Commits analisados:"
+
+          git log --format="%s" "$BASE_SHA..$HEAD_SHA" | while IFS= read -r COMMIT_MESSAGE
+          do
+            echo "$COMMIT_MESSAGE"
+
+            if [[ "$COMMIT_MESSAGE" =~ ^ROAD-[0-9]+:\ .+ ]]; then
+              echo "✅ Commit segue o padrão."
+            else
+              echo "❌ Commit fora do padrão:"
+              echo "$COMMIT_MESSAGE"
+              echo ""
+              echo "Formato esperado:"
+              echo "ROAD-123: descrição curta"
+              exit 1
+            fi
+          done
