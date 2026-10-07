@@ -3,26 +3,49 @@ import json
 import cv2
 from pathlib import Path
 
-# NOVA IMPORTAÇÃO: Trazendo o nosso extrator de frames
-from extracao_frames import ExtratorFrames
+from roadvision.detection.detector_yolo import YOLODetector
+from roadvision.capture.extracao_frames import ExtratorFrames
+
 
 # Definindo o caminho do arquivo JSON que contém as informações das câmeras.
-CAMERAS_PATH = Path(__file__).resolve().parents[3] / "configs" / "cameras" / "cameras.json"
+CAMERAS_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "configs"
+    / "cameras"
+    / "cameras.json"
+)
 
+
+# Criando uma função chamada carregar_cameras() que irá ler o arquivo JSON.
 def carregar_cameras():
     with open(CAMERAS_PATH, "r", encoding="utf-8") as arquivo:
         dados = json.load(arquivo)
-        return dados["cameras"] 
+        return dados["cameras"]
 
+
+# Criando uma função para buscar uma câmera pelo ID.
 def buscar_cameras(cameras, camera_id):
     for camera in cameras:
         if camera["id"] == camera_id:
-            return camera 
+            return camera
+
     return None
 
+
+# Criando a função main(), ponto de entrada do programa.
 def main():
+
+    # Carregando as câmeras do arquivo JSON.
     cameras = carregar_cameras()
+
+    # Carregando o modelo YOLO.
+    print("Carregando detector YOLO...")
+    detector = YOLODetector()
+
+    # Definindo o ID da câmera.
     camera_id = 36
+
+    # Buscando a câmera.
     camera = buscar_cameras(cameras, camera_id)
 
     if camera is None:
@@ -33,47 +56,67 @@ def main():
     print(f"KM {camera['km']}")
     print(f"Stream: {camera['stream_url']}")
 
+    # Abrindo o stream da câmera.
     captura = cv2.VideoCapture(
         camera["stream_url"],
         cv2.CAP_FFMPEG
     )
 
-    print(f"backend utilizado: {captura.getBackendName()}")
-
     if not captura.isOpened():
         print("Erro ao abrir a captura de vídeo.")
         return
 
-    print(f"Captura de vídeo iniciada com sucesso para a câmera {camera['nome']}.")
-    print("Pressione 'esc' para sair.")
+    print(f"Backend utilizado: {captura.getBackendName()}")
 
-    # NOVA CONFIGURAÇÃO: Definindo o intervalo para extrair 1 frame a cada 2.0 segundos
+    print(
+        f"Captura de vídeo iniciada com sucesso "
+        f"para a câmera {camera['nome']}."
+    )
+
+    print("Pressione 'ESC' para sair.")
+
+    # Configurando a extração de frames.
     extrator = ExtratorFrames(intervalo_segundos=2.0)
 
+    # Loop de captura dos frames.
     while True:
+
         sucesso, frame = captura.read()
 
         if not sucesso:
             print("Erro ao capturar o frame de vídeo.")
             break
 
-        # NOVA LÓGICA: Passando o frame da câmera para o extrator avaliar
+        # Enviando o frame para o extrator.
         frame_extraido = extrator.processar(frame)
-        
-        # Se o extrator devolveu um frame, significa que deu o tempo certo (2 segundos)
+
+        # Quando um frame é extraído, ele é enviado para o YOLO.
         if frame_extraido is not None:
-            print(f"✅ Frame extraído com sucesso para IA! Tamanho: {frame_extraido.shape}")
 
-        cv2.imshow("RoadVision - Captura de Vídeo", frame)
+            # Executando a detecção de veículos.
+            resultado = detector.detect(frame_extraido)
 
-        tecla = cv2.waitKey(100) & 0xFF
+            # Desenhando as detecções encontradas pelo YOLO.
+            frame_analisado = resultado.plot()
 
-        if tecla == 27:  
+            # Mostrando o frame com as detecções.
+            cv2.imshow(
+                "RoadVision - Captura de Video + YOLO",
+                frame_analisado
+            )
+
+        # Verificando se ESC foi pressionado.
+        tecla = cv2.waitKey(1) & 0xFF
+
+        if tecla == 27:
             print("Saindo da captura de vídeo...")
             break
 
-    captura.release() 
-    cv2.destroyAllWindows() 
+    # Liberando os recursos.
+    captura.release()
+    cv2.destroyAllWindows()
 
+
+# Executando o programa somente quando o arquivo for executado diretamente.
 if __name__ == "__main__":
     main()
