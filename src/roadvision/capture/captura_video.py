@@ -5,6 +5,7 @@ from pathlib import Path
 
 from roadvision.detection.detector_yolo import YOLODetector
 from roadvision.capture.extracao_frames import ExtratorFrames
+from roadvision.capture.tratamento_falha_camera import executar_reconexao
 
 
 # Definindo o caminho do arquivo JSON que contém as informações das câmeras.
@@ -85,7 +86,16 @@ def main():
 
         if not sucesso:
             print("Erro ao capturar o frame de vídeo.")
-            break
+            captura.release()
+
+            captura = executar_reconexao(camera)
+
+            if captura is None:
+                print("Encerrando a captura após falha de reconexão.")
+                break
+
+            print("Captura de vídeo restaurada com sucesso.")
+            continue
 
         # Enviando o frame para o extrator.
         frame_extraido = extrator.processar(frame)
@@ -96,25 +106,15 @@ def main():
             # Executando a detecção de veículos.
             resultado = detector.detect(frame_extraido)
 
-            # Desenhando as detecções encontradas pelo YOLO.
-            frame_analisado = resultado.plot()
+            # Resultado do YOLO processado sem interface gráfica.
+            quantidade_deteccoes = len(resultado.boxes)
 
-            # Mostrando o frame com as detecções.
-            cv2.imshow(
-                "RoadVision - Captura de Video + YOLO",
-                frame_analisado
+            print(
+                f"Detecções encontradas: {quantidade_deteccoes}"
             )
-
-        # Verificando se ESC foi pressionado.
-        tecla = cv2.waitKey(1) & 0xFF
-
-        if tecla == 27:
-            print("Saindo da captura de vídeo...")
-            break
 
     # Liberando os recursos.
     captura.release()
-    cv2.destroyAllWindows()
 
 
 # Executando o programa somente quando o arquivo for executado diretamente.
