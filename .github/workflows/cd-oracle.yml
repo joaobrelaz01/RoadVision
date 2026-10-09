@@ -1,10 +1,9 @@
-
-name: CD RoadVision - Oracle Cloud
+﻿name: CD RoadVision - Oracle Cloud
 
 on:
   push:
     branches:
-      - ROAD-54-task-41-avaliar-desempenho-do-processamento
+      - main
   workflow_dispatch:
 
 jobs:
@@ -43,6 +42,6 @@ jobs:
             "$ORACLE_USER@$ORACLE_HOST" \
             'cd /home/opc/roadvision &&
              git fetch origin &&
-             git checkout ROAD-54-task-41-avaliar-desempenho-do-processamento &&
-             git pull --ff-only origin ROAD-54-task-41-avaliar-desempenho-do-processamento &&
+             git checkout main &&
+             git pull --ff-only origin main &&
              .venv/bin/python -m compileall -q src/roadvision'
