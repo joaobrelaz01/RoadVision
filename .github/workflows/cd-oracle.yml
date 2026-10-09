@@ -1,0 +1,48 @@
+
+name: CD RoadVision - Oracle Cloud
+
+on:
+  push:
+    branches:
+      - ROAD-54-task-41-avaliar-desempenho-do-processamento
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Atualizar VM Oracle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe Python
+        run: python -m compileall -q src
+
+      - name: Configurar chave SSH
+        env:
+          ORACLE_SSH_KEY: ${{ secrets.ORACLE_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$ORACLE_SSH_KEY" > ~/.ssh/oracle_key
+          chmod 600 ~/.ssh/oracle_key
+          ssh-keygen -y -f ~/.ssh/oracle_key > /dev/null
+
+      - name: Confiar na VM Oracle
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+        run: |
+          ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts
+
+      - name: Atualizar código na Oracle
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
+          ORACLE_USER: ${{ secrets.ORACLE_USER }}
+        run: |
+          ssh -i ~/.ssh/oracle_key \
+            "$ORACLE_USER@$ORACLE_HOST" \
+            'cd /home/opc/roadvision &&
+             git fetch origin &&
+             git checkout ROAD-54-task-41-avaliar-desempenho-do-processamento &&
+             git pull --ff-only origin ROAD-54-task-41-avaliar-desempenho-do-processamento &&
+             .venv/bin/python -m compileall -q src/roadvision'
