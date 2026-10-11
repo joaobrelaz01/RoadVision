@@ -1,14 +1,14 @@
-# Importando bibliotecas json e OpenCV (cv2) para manipulação de arquivos JSON e captura de vídeo.
+# Bibliotecas para leitura de configuração e captura de vídeo.
 import json
 import cv2
 from pathlib import Path
 
 from roadvision.detection.detector_yolo import YOLODetector
-from roadvision.capture.extracao_frames import ExtratorFrames
+from roadvision.tracking import VehicleTracker
 from roadvision.capture.tratamento_falha_camera import executar_reconexao
 
 
-# Definindo o caminho do arquivo JSON que contém as informações das câmeras.
+# Caminho do arquivo JSON com as câmeras.
 CAMERAS_PATH = (
     Path(__file__).resolve().parents[3]
     / "configs"
@@ -17,15 +17,15 @@ CAMERAS_PATH = (
 )
 
 
-# Criando uma função chamada carregar_cameras() que irá ler o arquivo JSON.
 def carregar_cameras():
+    """Carrega a lista de câmeras configuradas."""
     with open(CAMERAS_PATH, "r", encoding="utf-8") as arquivo:
         dados = json.load(arquivo)
         return dados["cameras"]
 
 
-# Criando uma função para buscar uma câmera pelo ID.
 def buscar_cameras(cameras, camera_id):
+    """Busca uma câmera pelo seu identificador."""
     for camera in cameras:
         if camera["id"] == camera_id:
             return camera
@@ -33,90 +33,112 @@ def buscar_cameras(cameras, camera_id):
     return None
 
 
-# Criando a função main(), ponto de entrada do programa.
 def main():
+    captura = None
 
-    # Carregando as câmeras do arquivo JSON.
-    cameras = carregar_cameras()
+    try:
+        # Carrega a configuração das câmeras.
+        cameras = carregar_cameras()
 
-    # Carregando o modelo YOLO.
-    print("Carregando detector YOLO...")
-    detector = YOLODetector()
+        # Seleciona a câmera.
+        camera_id = 36
+        camera = buscar_cameras(cameras, camera_id)
 
-    # Definindo o ID da câmera.
-    camera_id = 36
+        if camera is None:
+            print(f"Câmera com o ID {camera_id} não foi encontrada.")
+            return
 
-    # Buscando a câmera.
-    camera = buscar_cameras(cameras, camera_id)
+        print(f"Câmera selecionada: {camera['nome']}")
+        print(f"KM: {camera['km']}")
+        print(f"Stream: {camera['stream_url']}")
 
-    if camera is None:
-        print(f"Camera com o ID {camera_id} não foi encontrada...")
-        return
+        # Carrega o modelo YOLO uma única vez.
+        print("Carregando detector YOLO...")
+        detector = YOLODetector()
 
-    print(f"Camera Selecionada: {camera['nome']}")
-    print(f"KM {camera['km']}")
-    print(f"Stream: {camera['stream_url']}")
+        # Reutiliza o modelo do detector para rastrear os veículos.
+        tracker = VehicleTracker(detector.model)
+        print("Rastreador de veículos inicializado.")
 
-    # Abrindo o stream da câmera.
-    captura = cv2.VideoCapture(
-        camera["stream_url"],
-        cv2.CAP_FFMPEG
-    )
+        # Abre o stream da câmera.
+        captura = cv2.VideoCapture(
+            camera["stream_url"],
+            cv2.CAP_FFMPEG,
+        )
 
-    if not captura.isOpened():
-        print("Erro ao abrir a captura de vídeo.")
-        return
+        if not captura.isOpened():
+            print("Erro ao abrir a captura de vídeo.")
+            return
 
-    print(f"Backend utilizado: {captura.getBackendName()}")
+        print(f"Backend utilizado: {captura.getBackendName()}")
+        print("Captura iniciada com sucesso.")
+        print("Pressione ESC para sair.")
 
-    print(
-        f"Captura de vídeo iniciada com sucesso "
-        f"para a câmera {camera['nome']}."
-    )
+        frames_processados = 0
+        ultimo_log = 0
 
-    print("Pressione 'ESC' para sair.")
+        while True:
+            sucesso, frame = captura.read()
 
-    # Configurando a extração de frames.
-    extrator = ExtratorFrames(intervalo_segundos=2.0)
+            if not sucesso:
+                print("Falha ao capturar frame. Tentando reconectar...")
+                captura.release()
 
-    # Loop de captura dos frames.
-    while True:
+                captura = executar_reconexao(camera)
 
-        sucesso, frame = captura.read()
+                if captura is None:
+                    print("Não foi possível reconectar. Encerrando.")
+                    break
 
-        if not sucesso:
-            print("Erro ao capturar o frame de vídeo.")
-            captura.release()
+                # O fluxo de vídeo foi reiniciado.
+                # Resetamos o estado interno do ByteTrack para evitar
+                # misturar o estado anterior com o novo stream.
+                detector.model.predictor = None
 
-            captura = executar_reconexao(camera)
+                print("Captura restaurada. Rastreamento reiniciado.")
+                continue
 
-            if captura is None:
-                print("Encerrando a captura após falha de reconexão.")
-                break
+            # O rastreador recebe cada frame capturado.
+            resultado = tracker.track(frame)
+            frames_processados += 1
 
-            print("Captura de vídeo restaurada com sucesso.")
-            continue
+            ids_ativos = tracker.get_active_ids()
 
-        # Enviando o frame para o extrator.
-        frame_extraido = extrator.processar(frame)
-
-        # Quando um frame é extraído, ele é enviado para o YOLO.
-        if frame_extraido is not None:
-
-            # Executando a detecção de veículos.
-            resultado = detector.detect(frame_extraido)
-
-            # Resultado do YOLO processado sem interface gráfica.
-            quantidade_deteccoes = len(resultado.boxes)
+            estados = tracker.get_active_states()
 
             print(
-                f"Detecções encontradas: {quantidade_deteccoes}"
+                "Estados dos veículos: "
+                + ", ".join(
+                    f"ID {track_id}: {estado}"
+                    for track_id, estado in estados.items()
+                )
             )
 
-    # Liberando os recursos.
-    captura.release()
+            # Registra informações no terminal a cada 30 frames.
+            if frames_processados - ultimo_log >= 30:
+                print(
+                    f"Frames: {frames_processados} | "
+                    f"IDs ativos: {ids_ativos} | "
+                    f"Total de IDs distintos: "
+                    f"{tracker.get_unique_count()}"
+                )
+                ultimo_log = frames_processados
+
+            # Exibe as caixas e os IDs atribuídos pelo rastreador.
+            frame_analisado = resultado.plot()
+            cv2.imshow("RoadVision - Rastreamento", frame_analisado)
+
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+
+    finally:
+        # Libera os recursos mesmo se ocorrer um erro.
+        if captura is not None:
+            captura.release()
+
+        cv2.destroyAllWindows()
+        print("Recursos da captura liberados.")
 
 
-# Executando o programa somente quando o arquivo for executado diretamente.
 if __name__ == "__main__":
     main()

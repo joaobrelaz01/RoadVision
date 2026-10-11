@@ -1,0 +1,149 @@
+from collections import defaultdict, deque
+from math import hypot
+
+CLASSES_VEICULOS = {
+    2: "carro",
+    3: "moto",
+    5: "onibus",
+    7: "caminhao",
+}
+
+
+class VehicleTracker:
+    """Rastreia veículos, mantém seus IDs e estima seus estados de movimento."""
+
+    def __init__(
+        self,
+        model,
+        history_length=30,
+        janela_movimento=10,
+        limite_parado=8.0,
+        limite_lento=25.0,
+        frames_confirmacao=5,
+    ):
+        if history_length < 1:
+            raise ValueError("history_length deve ser maior que zero.")
+        if janela_movimento < 2:
+            raise ValueError("janela_movimento deve ser pelo menos 2.")
+        if not 0 <= limite_parado < limite_lento:
+            raise ValueError("Os limites de movimento são inválidos.")
+        if frames_confirmacao < 1:
+            raise ValueError("frames_confirmacao deve ser maior que zero.")
+
+        self.model = model
+        self.history = defaultdict(
+            lambda: deque(maxlen=max(history_length, janela_movimento + 1))
+        )
+
+        self.unique_ids = set()
+        self.active_ids = []
+        self.states = {}
+        self.pending_states = {}
+        self.state_streaks = defaultdict(int)
+
+        self.janela_movimento = janela_movimento
+        self.limite_parado = limite_parado
+        self.limite_lento = limite_lento
+        self.frames_confirmacao = frames_confirmacao
+
+    def track(self, frame):
+        """Rastreia os veículos e atualiza suas posições e estados."""
+
+        resultados = self.model.track(
+            frame,
+            persist=True,
+            classes=list(CLASSES_VEICULOS.keys()),
+            tracker="bytetrack.yaml",
+            verbose=False,
+        )
+
+        resultado = resultados[0]
+        self.active_ids = []
+
+        if resultado.boxes is None or resultado.boxes.id is None:
+            return resultado
+
+        ids = resultado.boxes.id.int().cpu().tolist()
+        caixas = resultado.boxes.xyxy.cpu().tolist()
+
+        for track_id, caixa in zip(ids, caixas):
+            x1, y1, x2, y2 = map(int, caixa)
+            centro = ((x1 + x2) // 2, (y1 + y2) // 2)
+
+            self.history[track_id].append(centro)
+            self.unique_ids.add(track_id)
+            self.active_ids.append(track_id)
+
+            estado_estimado = self._estimar_estado(track_id)
+
+            estado_atual = self.states.get(track_id)
+
+            if estado_atual is None:
+                self.states[track_id] = estado_estimado
+                self.pending_states.pop(track_id, None)
+                self.state_streaks[track_id] = 0
+
+            elif estado_estimado == estado_atual:
+                self.pending_states.pop(track_id, None)
+                self.state_streaks[track_id] = 0
+
+            else:
+                if self.pending_states.get(track_id) == estado_estimado:
+                    self.state_streaks[track_id] += 1
+                else:
+                    self.pending_states[track_id] = estado_estimado
+                    self.state_streaks[track_id] = 1
+
+                if self.state_streaks[track_id] >= self.frames_confirmacao:
+                    self.states[track_id] = estado_estimado
+                    self.pending_states.pop(track_id, None)
+                    self.state_streaks[track_id] = 0
+
+        return resultado
+
+    def _estimar_estado(self, track_id):
+        """Estima movimento pelo deslocamento entre posições da trajetória."""
+
+        pontos = list(self.history[track_id])
+
+        if len(pontos) < self.janela_movimento + 1:
+            return "INDEFINIDO"
+
+        inicio = pontos[-(self.janela_movimento + 1)]
+        fim = pontos[-1]
+
+        deslocamento = hypot(
+            fim[0] - inicio[0],
+            fim[1] - inicio[1],
+        )
+
+        if deslocamento <= self.limite_parado:
+            return "PARADO"
+
+        if deslocamento <= self.limite_lento:
+            return "LENTO"
+
+        return "MOVENDO"
+
+    def get_trajectory(self, track_id):
+        """Retorna as posições registradas de um veículo."""
+        return list(self.history.get(track_id, []))
+
+    def get_active_ids(self):
+        """Retorna os IDs encontrados no frame mais recente."""
+        return self.active_ids.copy()
+
+    def get_unique_count(self):
+        """Retorna a quantidade de IDs distintos observados."""
+        return len(self.unique_ids)
+
+    def get_vehicle_state(self, track_id):
+        """Retorna o estado confirmado de um veículo."""
+        return self.states.get(track_id, "INDEFINIDO")
+
+    def get_active_states(self):
+        """Retorna os estados dos veículos detectados no frame atual."""
+        return {
+            track_id: self.get_vehicle_state(track_id)
+            for track_id in self.active_ids
+        }

@@ -1,0 +1,12 @@
+﻿id,nome,conectou,frames_lidos,fps_aproximado,leitura_media_ms,erros_leitura,erro
+5,KM 073+000 - Maranduba,True,360,41.14,20.44,1,
+8,KM 110+000 - São Sebastião,True,660,23.53,41.52,1,
+9,KM 110+000 - Massaguaçu,True,145,5.07,187.18,1,
+10,KM 136+000 - Caraguatatuba,False,0,0.0,0.0,0,Não foi possível abrir o stream.
+11,KM 168+000 - Bertioga,True,360,41.21,21.14,1,
+12,KM 193+000 - São Sebastião,True,420,33.06,28.31,1,
+13,KM 211+000 - Bertioga,True,240,27.38,32.75,1,
+14,KM 211+000 - Bertioga,True,240,27.48,31.12,1,
+36,KM 055+000 - Maranduba,True,840,29.49,33.37,1,
+37,KM 092+500 - Caraguatatuba,True,360,41.21,21.4,1,
+38,KM 083+500 - Maranduba,True,560,23.27,41.91,1,

@@ -1,0 +1,12 @@
+﻿camera_id,nome,status,frames,tempo_segundos,fps_medio,falhas_leitura,detalhe
+36,KM 055+000 - Maranduba,LEITURA_COM_FALHAS,840,35.3,23.8,479,Ocorreram falhas durante a leitura
+8,KM 110+000 - São Sebastião,LEITURA_COM_FALHAS,600,37.39,16.05,599,Ocorreram falhas durante a leitura
+38,KM 083+500 - Maranduba,LEITURA_COM_FALHAS,720,37.45,19.22,78,Ocorreram falhas durante a leitura
+11,KM 168+000 - Bertioga,OK,1226,38.67,31.7,0,
+13,KM 211+000 - Bertioga,LEITURA_COM_FALHAS,400,38.81,10.31,401,Ocorreram falhas durante a leitura
+9,KM 110+000 - Massaguaçu,OK,578,41.58,13.9,0,
+5,KM 073+000 - Maranduba,OK,1196,42.89,27.88,0,
+12,KM 193+000 - São Sebastião,OK,986,42.67,23.11,0,
+14,KM 211+000 - Bertioga,OK,796,42.75,18.62,0,
+37,KM 092+500 - Caraguatatuba,OK,1316,46.72,28.17,0,
+10,KM 136+000 - Caraguatatuba,MANUTENCAO,0,0,0,0,Ignorada durante a manutenção

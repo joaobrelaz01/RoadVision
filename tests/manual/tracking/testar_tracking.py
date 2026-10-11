@@ -134,5 +134,6 @@ if tempo_total > 0:
 
 
 print(f"Total de frames processados: {frames_processados}")
-print(f"Total de veiculos rastreados: {len(ids_vistos)}")
+print(f"Total de IDs registrados pelo teste: {len(ids_vistos)}")
+print(f"Total de IDs registrados pelo tracker: {tracker.get_unique_count()}")
 print("Teste de tracking finalizado.")
