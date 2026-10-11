@@ -1,0 +1,3 @@
+﻿camera_id,nome,frames_validos,falhas_captura,infracoes_yolo,deteccoes,fps_inferencia,media_inferencia_ms,infracoes_erro
+11,KM 168+000 - Bertioga,289,0,289,319,4.82,105.13,0
+37,KM 092+500 - Caraguatatuba,288,0,288,217,4.8,91.76,0
