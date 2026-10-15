@@ -298,9 +298,10 @@ async def main():
 
             sentido = resultado["sentido"] or "Não informado"
 
-            print
+            print(
                 f"{i:02d} | "
                 f"KM {resultado['km']} | "
+                f"Sentido: {sentido} | "
                 f"Encontrada: "
                 f"{'SIM' if resultado['encontrada'] else 'NÃO'} | "
                 f"Player: "
@@ -309,8 +310,8 @@ async def main():
                 f"{'SIM' if resultado['stream'] else 'NÃO'} | "
                 f"OpenCV: "
                 f"{'SIM' if resultado['opencv'] else 'NÃO'}"
+            )
             
-
         print("\n")
         input("Pressione ENTER para fechar...")
 
