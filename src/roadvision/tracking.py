@@ -1,3 +1,4 @@
+
 from collections import defaultdict, deque
 from math import hypot
 
@@ -10,7 +11,7 @@ CLASSES_VEICULOS = {
 
 
 class VehicleTracker:
-    """Rastreia veículos, mantém seus IDs e estima seus estados de movimento."""
+    """Rastreia veículos e limpa dados de IDs inativos."""
 
     def __init__(
         self,
@@ -20,6 +21,8 @@ class VehicleTracker:
         limite_parado=8.0,
         limite_lento=25.0,
         frames_confirmacao=5,
+        limite_inatividade=300,
+        intervalo_limpeza=30,
     ):
         if history_length < 1:
             raise ValueError("history_length deve ser maior que zero.")
@@ -29,12 +32,18 @@ class VehicleTracker:
             raise ValueError("Os limites de movimento são inválidos.")
         if frames_confirmacao < 1:
             raise ValueError("frames_confirmacao deve ser maior que zero.")
+        if limite_inatividade < 1:
+            raise ValueError("limite_inatividade deve ser maior que zero.")
+        if intervalo_limpeza < 1:
+            raise ValueError("intervalo_limpeza deve ser maior que zero.")
 
         self.model = model
+        tamanho_historico = max(history_length, janela_movimento + 1)
         self.history = defaultdict(
-            lambda: deque(maxlen=max(history_length, janela_movimento + 1))
+            lambda: deque(maxlen=tamanho_historico)
         )
 
+        # Mantém o histórico de IDs distintos durante esta execução.
         self.unique_ids = set()
         self.active_ids = []
         self.states = {}
@@ -46,9 +55,14 @@ class VehicleTracker:
         self.limite_lento = limite_lento
         self.frames_confirmacao = frames_confirmacao
 
-    def track(self, frame):
-        """Rastreia os veículos e atualiza suas posições e estados."""
+        self.limite_inatividade = limite_inatividade
+        self.intervalo_limpeza = intervalo_limpeza
+        self.frame_index = 0
+        self.last_seen = {}
+        self.frames_desde_limpeza = 0
 
+    def track(self, frame):
+        """Rastreia veículos, atualiza estados e limpa dados antigos."""
         resultados = self.model.track(
             frame,
             persist=True,
@@ -58,52 +72,75 @@ class VehicleTracker:
         )
 
         resultado = resultados[0]
+        self.frame_index += 1
+        self.frames_desde_limpeza += 1
         self.active_ids = []
 
-        if resultado.boxes is None or resultado.boxes.id is None:
-            return resultado
+        if resultado.boxes is not None and resultado.boxes.id is not None:
+            ids = resultado.boxes.id.int().cpu().tolist()
+            caixas = resultado.boxes.xyxy.cpu().tolist()
 
-        ids = resultado.boxes.id.int().cpu().tolist()
-        caixas = resultado.boxes.xyxy.cpu().tolist()
+            for track_id, caixa in zip(ids, caixas):
+                x1, y1, x2, y2 = map(int, caixa)
+                centro = ((x1 + x2) // 2, (y1 + y2) // 2)
 
-        for track_id, caixa in zip(ids, caixas):
-            x1, y1, x2, y2 = map(int, caixa)
-            centro = ((x1 + x2) // 2, (y1 + y2) // 2)
+                self.history[track_id].append(centro)
+                self.unique_ids.add(track_id)
+                self.active_ids.append(track_id)
+                self.last_seen[track_id] = self.frame_index
 
-            self.history[track_id].append(centro)
-            self.unique_ids.add(track_id)
-            self.active_ids.append(track_id)
+                estado_estimado = self._estimar_estado(track_id)
+                estado_atual = self.states.get(track_id)
 
-            estado_estimado = self._estimar_estado(track_id)
-
-            estado_atual = self.states.get(track_id)
-
-            if estado_atual is None:
-                self.states[track_id] = estado_estimado
-                self.pending_states.pop(track_id, None)
-                self.state_streaks[track_id] = 0
-
-            elif estado_estimado == estado_atual:
-                self.pending_states.pop(track_id, None)
-                self.state_streaks[track_id] = 0
-
-            else:
-                if self.pending_states.get(track_id) == estado_estimado:
-                    self.state_streaks[track_id] += 1
-                else:
-                    self.pending_states[track_id] = estado_estimado
-                    self.state_streaks[track_id] = 1
-
-                if self.state_streaks[track_id] >= self.frames_confirmacao:
+                if estado_atual is None:
                     self.states[track_id] = estado_estimado
                     self.pending_states.pop(track_id, None)
                     self.state_streaks[track_id] = 0
 
+                elif estado_estimado == estado_atual:
+                    self.pending_states.pop(track_id, None)
+                    self.state_streaks[track_id] = 0
+
+                else:
+                    if self.pending_states.get(track_id) == estado_estimado:
+                        self.state_streaks[track_id] += 1
+                    else:
+                        self.pending_states[track_id] = estado_estimado
+                        self.state_streaks[track_id] = 1
+
+                    if (
+                        self.state_streaks[track_id]
+                        >= self.frames_confirmacao
+                    ):
+                        self.states[track_id] = estado_estimado
+                        self.pending_states.pop(track_id, None)
+                        self.state_streaks[track_id] = 0
+
+        if self.frames_desde_limpeza >= self.intervalo_limpeza:
+            self.limpar_inativos()
+            self.frames_desde_limpeza = 0
+
         return resultado
 
-    def _estimar_estado(self, track_id):
-        """Estima movimento pelo deslocamento entre posições da trajetória."""
+    def limpar_inativos(self):
+        """Remove trajetórias e estados de IDs inativos por tempo excessivo."""
+        inativos = [
+            track_id
+            for track_id, ultimo_frame in self.last_seen.items()
+            if self.frame_index - ultimo_frame >= self.limite_inatividade
+        ]
 
+        for track_id in inativos:
+            self.history.pop(track_id, None)
+            self.states.pop(track_id, None)
+            self.pending_states.pop(track_id, None)
+            self.state_streaks.pop(track_id, None)
+            self.last_seen.pop(track_id, None)
+
+        return len(inativos)
+
+    def _estimar_estado(self, track_id):
+        """Estima movimento pelo deslocamento na trajetória."""
         pontos = list(self.history[track_id])
 
         if len(pontos) < self.janela_movimento + 1:
@@ -134,7 +171,7 @@ class VehicleTracker:
         return self.active_ids.copy()
 
     def get_unique_count(self):
-        """Retorna a quantidade de IDs distintos observados."""
+        """Retorna a quantidade de IDs distintos observados nesta execução."""
         return len(self.unique_ids)
 
     def get_vehicle_state(self, track_id):
