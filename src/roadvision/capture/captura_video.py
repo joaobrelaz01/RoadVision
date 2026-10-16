@@ -6,6 +6,7 @@ from pathlib import Path
 from roadvision.detection.detector_yolo import YOLODetector
 from roadvision.tracking import VehicleTracker
 from roadvision.capture.tratamento_falha_camera import executar_reconexao
+from roadvision.detection.contagem_linha_virtual import LinhaVirtualContagem
 
 
 # Caminho do arquivo JSON com as câmeras.
@@ -37,10 +38,8 @@ def main():
     captura = None
 
     try:
-        # Carrega a configuração das câmeras.
         cameras = carregar_cameras()
 
-        # Seleciona a câmera.
         camera_id = 36
         camera = buscar_cameras(cameras, camera_id)
 
@@ -52,19 +51,19 @@ def main():
         print(f"KM: {camera['km']}")
         print(f"Stream: {camera['stream_url']}")
 
-        # Carrega o modelo YOLO uma única vez.
         print("Carregando detector YOLO...")
         detector = YOLODetector()
-
-        # Reutiliza o modelo do detector para rastrear os veículos.
         tracker = VehicleTracker(detector.model)
         print("Rastreador de veículos inicializado.")
 
-        # Abre o stream da câmera.
-        captura = cv2.VideoCapture(
-            camera["stream_url"],
-            cv2.CAP_FFMPEG,
+        # Coordenadas provisórias para a câmera 36; ajustar visualmente.
+        linha_contagem = LinhaVirtualContagem(
+            ponto_inicial=(120, 350),
+            ponto_final=(430, 125),
         )
+        print("Contagem por linha virtual inicializada.")
+
+        captura = cv2.VideoCapture(camera["stream_url"], cv2.CAP_FFMPEG)
 
         if not captura.isOpened():
             print("Erro ao abrir a captura de vídeo.")
@@ -83,27 +82,41 @@ def main():
             if not sucesso:
                 print("Falha ao capturar frame. Tentando reconectar...")
                 captura.release()
-
                 captura = executar_reconexao(camera)
 
                 if captura is None:
                     print("Não foi possível reconectar. Encerrando.")
                     break
 
-                # O fluxo de vídeo foi reiniciado.
-                # Resetamos o estado interno do ByteTrack para evitar
-                # misturar o estado anterior com o novo stream.
+                # Reinicia o estado interno do ByteTrack após reconexão.
                 detector.model.predictor = None
-
                 print("Captura restaurada. Rastreamento reiniciado.")
                 continue
 
-            # O rastreador recebe cada frame capturado.
             resultado = tracker.track(frame)
             frames_processados += 1
 
-            ids_ativos = tracker.get_active_ids()
+            # Verifica se cada veículo ativo cruzou a linha virtual.
+            for track_id in tracker.get_active_ids():
+                trajetoria = tracker.get_trajectory(track_id)
 
+                if len(trajetoria) < 2:
+                    continue
+
+                sentido = linha_contagem.verificar_cruzamento(
+                    track_id,
+                    trajetoria[-2],
+                    trajetoria[-1],
+                )
+
+                if sentido is not None:
+                    print(
+                        f"Veículo ID {track_id} contado. "
+                        f"Sentido geométrico: {sentido}. "
+                        f"Total contado: {linha_contagem.total_contado()}"
+                    )
+
+            ids_ativos = tracker.get_active_ids()
             estados = tracker.get_active_states()
 
             print(
@@ -114,25 +127,40 @@ def main():
                 )
             )
 
-            # Registra informações no terminal a cada 30 frames.
             if frames_processados - ultimo_log >= 30:
                 print(
                     f"Frames: {frames_processados} | "
                     f"IDs ativos: {ids_ativos} | "
-                    f"Total de IDs distintos: "
-                    f"{tracker.get_unique_count()}"
+                    f"Total de IDs distintos: {tracker.get_unique_count()} | "
+                    f"Veículos contados: {linha_contagem.total_contado()}"
                 )
                 ultimo_log = frames_processados
 
-            # Exibe as caixas e os IDs atribuídos pelo rastreador.
             frame_analisado = resultado.plot()
-            cv2.imshow("RoadVision - Rastreamento", frame_analisado)
+
+            cv2.line(
+                frame_analisado,
+                linha_contagem.ponto_inicial,
+                linha_contagem.ponto_final,
+                (0, 255, 255),
+                2,
+            )
+            cv2.putText(
+                frame_analisado,
+                f"Veiculos contados: {linha_contagem.total_contado()}",
+                (20, 35),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 255, 0),
+                2,
+            )
+
+            cv2.imshow("RoadVision - Contagem de Veiculos", frame_analisado)
 
             if cv2.waitKey(1) & 0xFF == 27:
                 break
 
     finally:
-        # Libera os recursos mesmo se ocorrer um erro.
         if captura is not None:
             captura.release()
 
