@@ -7,6 +7,7 @@ from roadvision.detection.detector_yolo import YOLODetector
 from roadvision.tracking import VehicleTracker
 from roadvision.capture.tratamento_falha_camera import executar_reconexao
 from roadvision.detection.contagem_linha_virtual import LinhaVirtualContagem
+from roadvision.counter import VehicleCounter
 
 
 # Caminho do arquivo JSON com as câmeras.
@@ -54,7 +55,9 @@ def main():
         print("Carregando detector YOLO...")
         detector = YOLODetector()
         tracker = VehicleTracker(detector.model)
+        contador = VehicleCounter()
         print("Rastreador de veículos inicializado.")
+        print("Contador de veículos inicializado.")
 
         # Coordenadas provisórias para a câmera 36; ajustar visualmente.
         linha_contagem = LinhaVirtualContagem(
@@ -110,10 +113,18 @@ def main():
                 )
 
                 if sentido is not None:
+                    registrado = contador.registrar_cruzamento(
+                        track_id,
+                        sentido,
+                    )
+
+                if registrado:
                     print(
                         f"Veículo ID {track_id} contado. "
                         f"Sentido geométrico: {sentido}. "
-                        f"Total contado: {linha_contagem.total_contado()}"
+                        f"Total contado: {contador.total_contado()} | "
+                        f"Sentido {sentido}: "
+                        f"{contador.total_por_sentido(sentido)}"
                     )
 
             ids_ativos = tracker.get_active_ids()
@@ -132,7 +143,7 @@ def main():
                     f"Frames: {frames_processados} | "
                     f"IDs ativos: {ids_ativos} | "
                     f"Total de IDs distintos: {tracker.get_unique_count()} | "
-                    f"Veículos contados: {linha_contagem.total_contado()}"
+                    f"Veículos contados: {contador.total_contado()}"
                 )
                 ultimo_log = frames_processados
 
