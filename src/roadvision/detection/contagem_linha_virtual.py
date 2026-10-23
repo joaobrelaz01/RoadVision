@@ -1,4 +1,8 @@
 
+SENTIDO_1 = "lado_negativo_para_positivo"
+SENTIDO_2 = "lado_positivo_para_negativo"
+
+
 class LinhaVirtualContagem:
     """Detecta cruzamentos de veículos por um segmento virtual."""
 
@@ -94,9 +98,9 @@ class LinhaVirtualContagem:
         self.ids_contados.add(track_id)
 
         if lado_anterior < 0 < lado_atual:
-            return "lado_negativo_para_positivo"
+            return SENTIDO_1
 
-        return "lado_positivo_para_negativo"
+        return SENTIDO_2
 
     def total_contado(self):
         """Retorna o total de IDs contados."""
