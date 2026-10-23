@@ -2,6 +2,7 @@
 from collections import defaultdict, deque
 from math import hypot
 
+
 CLASSES_VEICULOS = {
     2: "carro",
     3: "moto",
@@ -11,7 +12,7 @@ CLASSES_VEICULOS = {
 
 
 class VehicleTracker:
-    """Rastreia veículos e limpa dados de IDs inativos."""
+    """Rastreia veículos, suas categorias e estados de movimento."""
 
     def __init__(
         self,
@@ -38,13 +39,21 @@ class VehicleTracker:
             raise ValueError("intervalo_limpeza deve ser maior que zero.")
 
         self.model = model
-        tamanho_historico = max(history_length, janela_movimento + 1)
+
+        tamanho_historico = max(
+            history_length,
+            janela_movimento + 1,
+        )
         self.history = defaultdict(
             lambda: deque(maxlen=tamanho_historico)
         )
 
-        # Mantém o histórico de IDs distintos durante esta execução.
+        # IDs distintos observados durante esta execução.
         self.unique_ids = set()
+
+        # Associação entre cada ID rastreado e sua categoria.
+        self.vehicle_classes = {}
+
         self.active_ids = []
         self.states = {}
         self.pending_states = {}
@@ -72,18 +81,34 @@ class VehicleTracker:
         )
 
         resultado = resultados[0]
+
         self.frame_index += 1
         self.frames_desde_limpeza += 1
         self.active_ids = []
 
-        if resultado.boxes is not None and resultado.boxes.id is not None:
-            ids = resultado.boxes.id.int().cpu().tolist()
-            caixas = resultado.boxes.xyxy.cpu().tolist()
+        boxes = resultado.boxes
 
-            for track_id, caixa in zip(ids, caixas):
+        if boxes is not None and boxes.id is not None:
+            ids = boxes.id.int().cpu().tolist()
+            caixas = boxes.xyxy.cpu().tolist()
+            classes = boxes.cls.int().cpu().tolist()
+
+            for track_id, caixa, classe_id in zip(
+                ids, caixas, classes
+            ):
+                tipo_veiculo = CLASSES_VEICULOS.get(classe_id)
+
+                # Ignora classes que não pertencem às categorias suportadas.
+                if tipo_veiculo is None:
+                    continue
+
                 x1, y1, x2, y2 = map(int, caixa)
-                centro = ((x1 + x2) // 2, (y1 + y2) // 2)
+                centro = (
+                    (x1 + x2) // 2,
+                    (y1 + y2) // 2,
+                )
 
+                self.vehicle_classes[track_id] = tipo_veiculo
                 self.history[track_id].append(centro)
                 self.unique_ids.add(track_id)
                 self.active_ids.append(track_id)
@@ -102,7 +127,10 @@ class VehicleTracker:
                     self.state_streaks[track_id] = 0
 
                 else:
-                    if self.pending_states.get(track_id) == estado_estimado:
+                    if (
+                        self.pending_states.get(track_id)
+                        == estado_estimado
+                    ):
                         self.state_streaks[track_id] += 1
                     else:
                         self.pending_states[track_id] = estado_estimado
@@ -127,7 +155,10 @@ class VehicleTracker:
         inativos = [
             track_id
             for track_id, ultimo_frame in self.last_seen.items()
-            if self.frame_index - ultimo_frame >= self.limite_inatividade
+            if (
+                self.frame_index - ultimo_frame
+                >= self.limite_inatividade
+            )
         ]
 
         for track_id in inativos:
@@ -136,11 +167,12 @@ class VehicleTracker:
             self.pending_states.pop(track_id, None)
             self.state_streaks.pop(track_id, None)
             self.last_seen.pop(track_id, None)
+            self.vehicle_classes.pop(track_id, None)
 
         return len(inativos)
 
     def _estimar_estado(self, track_id):
-        """Estima movimento pelo deslocamento na trajetória."""
+        """Estima o movimento pelo deslocamento da trajetória."""
         pontos = list(self.history[track_id])
 
         if len(pontos) < self.janela_movimento + 1:
@@ -171,7 +203,7 @@ class VehicleTracker:
         return self.active_ids.copy()
 
     def get_unique_count(self):
-        """Retorna a quantidade de IDs distintos observados nesta execução."""
+        """Retorna a quantidade de IDs distintos nesta execução."""
         return len(self.unique_ids)
 
     def get_vehicle_state(self, track_id):
@@ -179,8 +211,12 @@ class VehicleTracker:
         return self.states.get(track_id, "INDEFINIDO")
 
     def get_active_states(self):
-        """Retorna os estados dos veículos detectados no frame atual."""
+        """Retorna os estados dos veículos do frame atual."""
         return {
             track_id: self.get_vehicle_state(track_id)
             for track_id in self.active_ids
         }
+
+    def get_vehicle_type(self, track_id):
+        """Retorna a categoria associada ao ID rastreado."""
+        return self.vehicle_classes.get(track_id)

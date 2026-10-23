@@ -1,12 +1,13 @@
+
 # Bibliotecas para leitura de configuração e captura de vídeo.
 import json
 import cv2
 from pathlib import Path
 
 from roadvision.detection.detector_yolo import YOLODetector
+from roadvision.detection.contagem_linha_virtual import LinhaVirtualContagem
 from roadvision.tracking import VehicleTracker
 from roadvision.capture.tratamento_falha_camera import executar_reconexao
-from roadvision.detection.contagem_linha_virtual import LinhaVirtualContagem
 from roadvision.counter import VehicleCounter
 
 
@@ -56,17 +57,22 @@ def main():
         detector = YOLODetector()
         tracker = VehicleTracker(detector.model)
         contador = VehicleCounter()
-        print("Rastreador de veículos inicializado.")
-        print("Contador de veículos inicializado.")
 
-        # Coordenadas provisórias para a câmera 36; ajustar visualmente.
+        # Linha virtual provisória para a câmera 36.
         linha_contagem = LinhaVirtualContagem(
             ponto_inicial=(120, 350),
             ponto_final=(430, 125),
         )
-        print("Contagem por linha virtual inicializada.")
 
-        captura = cv2.VideoCapture(camera["stream_url"], cv2.CAP_FFMPEG)
+        print("Detector YOLO inicializado.")
+        print("Rastreador de veículos inicializado.")
+        print("Contador por tipo de veículo inicializado.")
+        print("Linha virtual de contagem inicializada.")
+
+        captura = cv2.VideoCapture(
+            camera["stream_url"],
+            cv2.CAP_FFMPEG,
+        )
 
         if not captura.isOpened():
             print("Erro ao abrir a captura de vídeo.")
@@ -91,16 +97,22 @@ def main():
                     print("Não foi possível reconectar. Encerrando.")
                     break
 
-                # Reinicia o estado interno do ByteTrack após reconexão.
+                # Reinicia o estado interno do modelo após reconexão.
                 detector.model.predictor = None
                 print("Captura restaurada. Rastreamento reiniciado.")
                 continue
 
+            # Detecta e rastreia os veículos presentes no frame.
             resultado = tracker.track(frame)
             frames_processados += 1
 
-            # Verifica se cada veículo ativo cruzou a linha virtual.
+            # Conta somente veículos que cruzarem a linha virtual.
             for track_id in tracker.get_active_ids():
+                tipo_veiculo = tracker.get_vehicle_type(track_id)
+
+                if tipo_veiculo is None:
+                    continue
+
                 trajetoria = tracker.get_trajectory(track_id)
 
                 if len(trajetoria) < 2:
@@ -112,41 +124,60 @@ def main():
                     trajetoria[-1],
                 )
 
-                if sentido is not None:
-                    registrado = contador.registrar_cruzamento(
-                        track_id,
-                        sentido,
-                    )
+                # Sem cruzamento válido, não contabiliza.
+                if sentido is None:
+                    continue
+
+                registrado = contador.registrar_cruzamento(
+                    track_id,
+                    direction=sentido,
+                    vehicle_type=tipo_veiculo,
+                )
 
                 if registrado:
                     print(
-                        f"Veículo ID {track_id} contado. "
-                        f"Sentido geométrico: {sentido}. "
-                        f"Total contado: {contador.total_contado()} | "
-                        f"Sentido {sentido}: "
-                        f"{contador.total_por_sentido(sentido)}"
+                        f"Veículo ID {track_id} contabilizado | "
+                        f"Tipo: {tipo_veiculo} | "
+                        f"Sentido: {sentido} | "
+                        f"Total: {contador.total_contado()}"
                     )
 
+            # Obtém os veículos ativos e seus estados de movimento.
             ids_ativos = tracker.get_active_ids()
             estados = tracker.get_active_states()
 
-            print(
-                "Estados dos veículos: "
-                + ", ".join(
-                    f"ID {track_id}: {estado}"
-                    for track_id, estado in estados.items()
+            if estados:
+                print(
+                    "Estados dos veículos: "
+                    + ", ".join(
+                        f"ID {track_id}: {estado}"
+                        for track_id, estado in estados.items()
+                    )
                 )
-            )
 
+            # Exibe o resumo de contagem a cada 30 frames.
             if frames_processados - ultimo_log >= 30:
+                resumo = contador.resumo_por_tipo()
+
                 print(
                     f"Frames: {frames_processados} | "
                     f"IDs ativos: {ids_ativos} | "
-                    f"Total de IDs distintos: {tracker.get_unique_count()} | "
-                    f"Veículos contados: {contador.total_contado()}"
+                    f"IDs distintos rastreados: "
+                    f"{tracker.get_unique_count()} | "
+                    f"Total contabilizado: {contador.total_contado()}"
                 )
+
+                print(
+                    "Contagem por tipo: "
+                    f"Carros={resumo['carro']} | "
+                    f"Motos={resumo['moto']} | "
+                    f"Ônibus={resumo['onibus']} | "
+                    f"Caminhões={resumo['caminhao']}"
+                )
+
                 ultimo_log = frames_processados
 
+            # Desenha as detecções e a linha virtual.
             frame_analisado = resultado.plot()
 
             cv2.line(
@@ -156,17 +187,31 @@ def main():
                 (0, 255, 255),
                 2,
             )
+
+            resumo = contador.resumo_por_tipo()
+
+            texto = (
+                f"Total: {contador.total_contado()} | "
+                f"Carros: {resumo['carro']} | "
+                f"Motos: {resumo['moto']} | "
+                f"Onibus: {resumo['onibus']} | "
+                f"Caminhoes: {resumo['caminhao']}"
+            )
+
             cv2.putText(
                 frame_analisado,
-                f"Veiculos contados: {linha_contagem.total_contado()}",
-                (20, 35),
+                texto,
+                (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
+                0.55,
                 (0, 255, 0),
                 2,
             )
 
-            cv2.imshow("RoadVision - Contagem de Veiculos", frame_analisado)
+            cv2.imshow(
+                "RoadVision - Contagem por Tipo de Veiculo",
+                frame_analisado,
+            )
 
             if cv2.waitKey(1) & 0xFF == 27:
                 break
