@@ -5,6 +5,8 @@ Não utiliza dados fictícios, fixos ou inventados.
 """
 import json
 import psutil
+import requests
+from concurrent.futures import ThreadPoolExecutor
 import zoneinfo
 from pathlib import Path
 from datetime import datetime, timezone
@@ -71,13 +73,11 @@ def get_todas_cameras() -> List[CameraBase]:
         except Exception as e:
             print(f"[DataService] Erro ao consultar câmeras no Supabase: {e}")
 
-    resultado: List[CameraBase] = []
-    for default in DEFAULT_DER_CAMERAS:
+    def _verificar_camera(default: Dict[str, Any]) -> CameraBase:
         der_id = default["id"]
         cfg = configs.get(der_id, {})
         stream_url = cfg.get("stream_url", f"http://200.144.30.103:8084/hls/cam_{der_id}/stream.m3u8")
 
-        # Verifica se essa câmera está registrada no banco
         match = None
         for sc in supabase_cams:
             nome_sc = str(sc.get("nome", ""))
@@ -85,7 +85,16 @@ def get_todas_cameras() -> List[CameraBase]:
                 match = sc
                 break
 
-        resultado.append(CameraBase(
+        online = False
+        try:
+            r = requests.get(stream_url, timeout=2.5)
+            if r.status_code == 200 and "#EXTM3U" in r.text:
+                online = True
+        except Exception:
+            online = False
+
+        agora_str = datetime.now(TZ_SP).strftime("%H:%M:%S")
+        return CameraBase(
             id=str(match.get("id")) if match else f"der-cam-{der_id}",
             camera_der_id=der_id,
             nome=default["nome"],
@@ -93,11 +102,14 @@ def get_todas_cameras() -> List[CameraBase]:
             km=default["km"],
             municipio=default["municipio"],
             stream_url=stream_url,
-            status="Sem conexão",  # Não simula conexão sem teste real
-            ativa=bool(match.get("ativa", False)) if match else False,
+            status="Online" if online else "Sem conex?o",
+            ativa=online or (bool(match.get("ativa", False)) if match else False),
             cadastrada_no_banco=match is not None,
-            ultima_atualizacao="—"
-        ))
+            ultima_atualizacao=agora_str if online else "?"
+        )
+
+    with ThreadPoolExecutor(max_workers=11) as pool:
+        resultado = list(pool.map(_verificar_camera, DEFAULT_DER_CAMERAS))
 
     return resultado
 
@@ -162,11 +174,9 @@ def get_dashboard_data() -> DashboardResponse:
 
     cameras_list = get_todas_cameras()
     total_cameras = len(cameras_list)
-    # Não simula câmeras online sem confirmação de sinal ao vivo
-    cameras_online = 0
-    cameras_offline = total_cameras
+    cameras_online = sum(1 for c in cameras_list if c.status == "Online")
+    cameras_offline = max(0, total_cameras - cameras_online)
 
-    # Calcula análise inteligente quantitativa e estruturada
     analise = calcular_analise_inteligente(
         registros_minuto=registros,
         registros_sentido=registros_sentido,
