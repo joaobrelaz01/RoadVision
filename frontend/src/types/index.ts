@@ -18,6 +18,7 @@ export interface DashboardMetrics {
   cameras_offline: number;
   total_cameras: number;
   km_monitorados: number;
+  extensao_trecho_cadastrado_km?: number;
   rodovias_ativas: number;
   carros: number;
   motos: number;
@@ -84,9 +85,10 @@ export interface UserProfile {
   id: string;
   nome: string;
   email: string;
-  cargo: 'Administrador' | 'Operador' | 'Visualizador';
+  cargo: 'Operador Master' | 'Administrador' | 'Operador' | 'Visualizador';
   status: 'Ativo' | 'Inativo';
   criado_em: string;
+  is_master?: boolean;
 }
 
 export interface SystemStatus {
@@ -99,3 +101,77 @@ export interface SystemStatus {
   version: string;
   last_ping: string;
 }
+
+export interface IntensidadeFluxo {
+  classificacao: 'Baixo' | 'Moderado' | 'Intenso' | 'Dados insuficientes para análise';
+  taxa_media_veic_h?: number | null;
+  criterio_documentado: string;
+  detalhes: string;
+}
+
+export interface HorariosPico {
+  janela_pico: string | null;
+  volume_pico: number;
+  periodo_analisado: string;
+  texto: string;
+}
+
+export interface ComposicaoTrafego {
+  categoria_lider: string;
+  percentual_lider: number;
+  distribuicao: Record<string, number>;
+  texto: string;
+}
+
+export interface PontoMovimentacao {
+  camera_id: string;
+  camera_der_id?: number | null;
+  nome: string;
+  km: string;
+  total_veiculos: number;
+  percentual: number;
+}
+
+export interface PontosMaiorMovimentacao {
+  ranking: PontoMovimentacao[];
+  camera_lider?: string | null;
+  texto: string;
+}
+
+export interface TendenciaTrafego {
+  classificacao: 'Aumento' | 'Redução' | 'Estabilidade' | 'Dados insuficientes para análise';
+  variacao_percentual?: number | null;
+  volume_atual: number;
+  volume_anterior: number;
+  texto: string;
+}
+
+export interface ConfiabilidadeDados {
+  score: 'Alta' | 'Parcial' | 'Limitada';
+  total_registros: number;
+  cameras_com_dados: number;
+  total_cameras_cadastradas: number;
+  detalhes: string;
+}
+
+export interface AnaliseInteligente {
+  intensidade: IntensidadeFluxo;
+  horarios_pico: HorariosPico;
+  composicao: ComposicaoTrafego;
+  pontos_movimentacao: PontosMaiorMovimentacao;
+  tendencia: TendenciaTrafego;
+  confiabilidade: ConfiabilidadeDados;
+  observacoes_automaticas: string[];
+}
+
+export interface UltimaCapturaResponse {
+  camera_id: string;
+  camera_der_id?: number | null;
+  nome_camera: string;
+  origem: string;
+  image_url: string;
+  captured_at: string;
+  status_modo: string;
+  disponivel: boolean;
+}
+

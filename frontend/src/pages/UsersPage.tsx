@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, CheckCircle, AlertCircle, RefreshCw, Lock } from 'lucide-react';
+import { Shield, CheckCircle, AlertCircle, RefreshCw, Lock, Crown, ShieldCheck } from 'lucide-react';
 import { fetchUsers } from '../services/api';
 import { UserProfile } from '../types';
 
@@ -56,11 +56,27 @@ export const UsersPage: React.FC = () => {
       )}
 
       {/* Cards de Resumo de Permissões */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card Operador Master */}
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-200/90 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs">
+              <Crown className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs text-amber-800 font-bold uppercase tracking-wider">Operador Master</span>
+              <span className="text-xl font-bold text-slate-900 block mt-0.5">
+                {users.filter((u) => u.cargo === 'Operador Master' || u.is_master).length}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card Administradores */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
-              <Shield className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <span className="text-xs text-slate-500 font-semibold uppercase">Administradores</span>
@@ -71,9 +87,10 @@ export const UsersPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Card Operadores */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
               <Shield className="w-5 h-5" />
             </div>
             <div>
@@ -85,6 +102,7 @@ export const UsersPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Card Total */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
@@ -124,37 +142,58 @@ export const UsersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-4 px-6 font-semibold text-slate-900">{u.nome}</td>
-                    <td className="py-4 px-6 text-slate-600 font-mono text-xs">{u.email}</td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        u.cargo === 'Administrador'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {u.cargo}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-slate-500 text-xs">{u.criado_em}</td>
-                  </tr>
-                ))}
+                {users.map((u) => {
+                  const isMasterUser = u.cargo === 'Operador Master' || u.is_master;
+                  return (
+                    <tr
+                      key={u.id}
+                      className={`transition-colors ${
+                        isMasterUser ? 'bg-amber-50/30 hover:bg-amber-50/50' : 'hover:bg-slate-50/60'
+                      }`}
+                    >
+                      <td className="py-4 px-6 font-semibold text-slate-900 flex items-center gap-2">
+                        {isMasterUser && <Crown className="w-4 h-4 text-amber-500 shrink-0" />}
+                        <span>{u.nome}</span>
+                      </td>
+                      <td className="py-4 px-6 text-slate-600 font-mono text-xs">{u.email}</td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            isMasterUser
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs'
+                              : u.cargo === 'Administrador'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
+                        >
+                          {u.cargo}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-slate-500 text-xs">{u.criado_em}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Nota Informativa */}
-      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70 text-xs text-slate-500 leading-relaxed">
-        <strong>Gerenciamento de Identidade:</strong> Os usuários listados acima correspondem às contas reais existentes no <code>Supabase Auth</code> do projeto. Novos operadores e senhas devem ser provisionados através do console do Supabase ou convite administrativo para garantir segurança com tokens JWT.
+      {/* Nota Informativa com Política do Operador Master */}
+      <div className="p-4 bg-gradient-to-r from-amber-50/60 via-slate-50 to-slate-50 rounded-xl border border-amber-200/60 text-xs text-slate-600 leading-relaxed space-y-1">
+        <div className="font-bold text-slate-800 flex items-center gap-1.5">
+          <Crown className="w-4 h-4 text-amber-600" />
+          <span>Controle de Acesso & Operador Master:</span>
+        </div>
+        <p>
+          O usuário <strong>João Brelaz</strong> (<code>joao.brelaz@uni9.edu.br</code>) detém o cargo de <strong>Operador Master</strong> com acesso irrestrito a todas as rodovias, telemetrias, inteligência analítica e gestão de usuários. Conforme as regras de segurança do RoadVision, a conta master possui imunidade permanente e não pode ser rebaixada ou excluída por outros administradores.
+        </p>
       </div>
     </div>
   );

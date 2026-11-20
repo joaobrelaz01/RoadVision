@@ -44,8 +44,10 @@ class DashboardMetrics(BaseModel):
     cameras_online: int
     cameras_offline: int
     total_cameras: int
-    km_monitorados: int
-    rodovias_ativas: int
+    km_monitorados: int = 156
+    extensao_trecho_cadastrado_km: int = 156
+    cobertura_efetiva_tempo_real: str = "Não disponível"
+    rodovias_ativas: int = 1
     carros: int
     motos: int
     onibus: int
@@ -65,10 +67,68 @@ class CategoryShare(BaseModel):
     value: int
     color: str
 
+class IntensidadeFluxo(BaseModel):
+    classificacao: str
+    taxa_media_veic_h: Optional[float] = None
+    criterio_documentado: str
+    detalhes: str
+
+class HorariosPico(BaseModel):
+    janela_pico: Optional[str] = None
+    volume_pico: int = 0
+    periodo_analisado: str
+    texto: str
+
+class ComposicaoTrafego(BaseModel):
+    categoria_lider: str
+    percentual_lider: float
+    distribuicao: Dict[str, float]
+    texto: str
+
+class PontoMovimentacao(BaseModel):
+    camera_id: str
+    camera_der_id: Optional[int] = None
+    nome: str
+    km: str
+    total_veiculos: int
+    percentual: float
+
+class PontosMaiorMovimentacao(BaseModel):
+    ranking: List[PontoMovimentacao]
+    camera_lider: Optional[str] = None
+    texto: str
+
+class TendenciaTrafego(BaseModel):
+    classificacao: str
+    variacao_percentual: Optional[float] = None
+    volume_atual: int
+    volume_anterior: int
+    texto: str
+
+class ConfiabilidadeDados(BaseModel):
+    score: str  # "Alta", "Parcial", "Limitada"
+    total_registros: int
+    cameras_com_dados: int
+    total_cameras_cadastradas: int
+    detalhes: str
+
+class AnaliseInteligente(BaseModel):
+    resumo_executivo: str = ""
+    narrativa_contextual: str = ""
+    alertas_operacionais: List[str] = []
+    intensidade: IntensidadeFluxo
+    horarios_pico: HorariosPico
+    composicao: ComposicaoTrafego
+    pontos_movimentacao: PontosMaiorMovimentacao
+    tendencia: TendenciaTrafego
+    confiabilidade: ConfiabilidadeDados
+    observacoes_automaticas: List[str]
+
 class DashboardResponse(BaseModel):
     metrics: DashboardMetrics
     categories: List[CategoryShare]
     hourly_flow: List[HourlyFlowItem]
+    analise_inteligente: AnaliseInteligente
 
 class HighwaySummary(BaseModel):
     nome: str
@@ -103,3 +163,13 @@ class SystemStatusResponse(BaseModel):
     active_cameras_count: int
     version: str = "1.0.0"
     last_ping: str
+
+class UltimaCapturaResponse(BaseModel):
+    camera_id: str
+    camera_der_id: Optional[int] = None
+    nome_camera: str
+    origem: str  # "supabase-storage" ou "local-sample-archive"
+    image_url: str
+    captured_at: str  # Formatada em America/Sao_Paulo
+    status_modo: str = "Modo Captura / Arquivo (Stream DER Offline)"
+    disponivel: bool = True
