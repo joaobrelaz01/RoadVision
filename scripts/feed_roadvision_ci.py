@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 scripts/feed_roadvision_ci.py
-Pipeline de Automação Contínua e Alimentação de Dados RoadVision (CI/CD).
-Simula a curva diurna litorânea real da SP-055 (Rio-Santos), gera contagens
-realistas ponderadas por dia da semana e horário (America/Sao_Paulo),
+Pipeline de AutomaÃ§Ã£o ContÃ­nua e AlimentaÃ§Ã£o de Dados RoadVision (CI/CD).
+Simula a curva diurna litorÃ¢nea real da SP-055 (Rio-Santos), gera contagens
+realistas ponderadas por dia da semana e horÃ¡rio (America/Sao_Paulo),
 insere em contagens_minuto e contagens_por_sentido, e atualiza o Supabase Storage.
 
 Uso:
@@ -18,7 +18,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple
 
-# Carrega variáveis de ambiente do .env se existir
+# Carrega variÃ¡veis de ambiente do .env se existir
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 
@@ -36,31 +36,31 @@ SAMPLE_DIR = BASE_DIR / "assets" / "sample_captures"
 
 def calcular_perfil_diurno_sp055(dt_sp: datetime) -> Tuple[float, Dict[str, float], float]:
     """
-    Retorna o multiplicador de fluxo da SP-055 e a divisão direcional
-    para o momento atual (hora e dia da semana em Brasília).
+    Retorna o multiplicador de fluxo da SP-055 e a divisÃ£o direcional
+    para o momento atual (hora e dia da semana em BrasÃ­lia).
     
     Retorna:
         - multiplicador de volume (0.0 a 2.5)
-        - proporção por sentido (ex: {"Ubatuba": 0.7, "Maranduba": 0.3})
-        - velocidade média estimada (km/h)
+        - proporÃ§Ã£o por sentido (ex: {"Ubatuba": 0.7, "Maranduba": 0.3})
+        - velocidade mÃ©dia estimada (km/h)
     """
-    dia_semana = dt_sp.weekday()  # 0=Segunda, ..., 4=Sexta, 5=Sábado, 6=Domingo
+    dia_semana = dt_sp.weekday()  # 0=Segunda, ..., 4=Sexta, 5=SÃ¡bado, 6=Domingo
     hora = dt_sp.hour + (dt_sp.minute / 60.0)
 
-    # 1. Curva base horária
+    # 1. Curva base horÃ¡ria
     if 0 <= hora < 5:
-        # Madrugada: tráfego muito baixo
+        # Madrugada: trÃ¡fego muito baixo
         fator_base = 0.15 + (hora / 5.0) * 0.15
         sentido_prop = {"Ubatuba": 0.50, "Maranduba": 0.50}
         velocidade = random.uniform(75.0, 85.0)
     elif 5 <= hora < 9:
-        # Manhã: pico comercial matutino
+        # ManhÃ£: pico comercial matutino
         pico = 1.0 - abs(hora - 7.5) / 2.0
         fator_base = 0.5 + max(0.0, pico) * 0.8
         sentido_prop = {"Ubatuba": 0.52, "Maranduba": 0.48}
         velocidade = random.uniform(60.0, 72.0)
     elif 9 <= hora < 16:
-        # Meio do dia: fluxo estável comercial/turístico
+        # Meio do dia: fluxo estÃ¡vel comercial/turÃ­stico
         fator_base = 0.75 + random.uniform(-0.1, 0.1)
         sentido_prop = {"Ubatuba": 0.50, "Maranduba": 0.50}
         velocidade = random.uniform(65.0, 75.0)
@@ -71,21 +71,21 @@ def calcular_perfil_diurno_sp055(dt_sp: datetime) -> Tuple[float, Dict[str, floa
         sentido_prop = {"Ubatuba": 0.48, "Maranduba": 0.52}
         velocidade = random.uniform(55.0, 68.0)
     else:
-        # Noite: declínio progressivo
+        # Noite: declÃ­nio progressivo
         fator_base = 0.5 - ((hora - 20) / 4.0) * 0.3
         sentido_prop = {"Ubatuba": 0.50, "Maranduba": 0.50}
         velocidade = random.uniform(70.0, 80.0)
 
-    # 2. Modificadores sazonais de fim de semana litorâneo (SP-055)
+    # 2. Modificadores sazonais de fim de semana litorÃ¢neo (SP-055)
     if dia_semana == 4:  # Sexta-feira
         if hora >= 15:
             # Descida pesada para as praias do Litoral Norte
             fator_base *= 1.45
             sentido_prop = {"Ubatuba": 0.72, "Maranduba": 0.28}
             velocidade = max(45.0, velocidade - 15.0)
-    elif dia_semana == 5:  # Sábado
+    elif dia_semana == 5:  # SÃ¡bado
         if 8 <= hora <= 13:
-            # Chegada de turistas pela manhã
+            # Chegada de turistas pela manhÃ£
             fator_base *= 1.35
             sentido_prop = {"Ubatuba": 0.65, "Maranduba": 0.35}
             velocidade = max(50.0, velocidade - 10.0)
@@ -101,13 +101,13 @@ def calcular_perfil_diurno_sp055(dt_sp: datetime) -> Tuple[float, Dict[str, floa
 
 def gerar_contagens_veiculos(fator_volume: float) -> Dict[str, int]:
     """
-    Gera volume de veículos proporcional ao fator da curva.
-    Volume base por minuto: ~5 a 15 veículos em fluxo normal.
+    Gera volume de veÃ­culos proporcional ao fator da curva.
+    Volume base por minuto: ~5 a 15 veÃ­culos em fluxo normal.
     """
     total_veiculos = max(2, int(random.gauss(10, 2) * fator_volume))
 
-    # Composição típica rodoviária litorânea SP:
-    # Carros ~72%, Motos ~14%, Caminhões ~10%, Ônibus ~4%
+    # ComposiÃ§Ã£o tÃ­pica rodoviÃ¡ria litorÃ¢nea SP:
+    # Carros ~72%, Motos ~14%, CaminhÃµes ~10%, Ã”nibus ~4%
     n_carros = int(total_veiculos * random.uniform(0.68, 0.75))
     sobra = max(0, total_veiculos - n_carros)
     
@@ -126,13 +126,12 @@ def gerar_contagens_veiculos(fator_volume: float) -> Dict[str, int]:
         "motos": max(0, n_motos),
         "onibus": max(0, n_onibus),
         "caminhoes": max(0, n_caminhoes),
-        "total": total_veiculos
     }
 
 
 def sincronizar_storage(client, dry_run: bool = False) -> str:
     """
-    Garante a existência do bucket 'camera-captures' e realiza upload
+    Garante a existÃªncia do bucket 'camera-captures' e realiza upload
     de imagens reais de amostra.
     """
     if dry_run or not client:
@@ -171,8 +170,8 @@ def sincronizar_storage(client, dry_run: bool = False) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pipeline de Alimentação Contínua RoadVision (CI/CD)")
-    parser.add_argument("--dry-run", action="store_true", help="Executa simulação completa sem gravar no banco de dados")
+    parser = argparse.ArgumentParser(description="Pipeline de AlimentaÃ§Ã£o ContÃ­nua RoadVision (CI/CD)")
+    parser.add_argument("--dry-run", action="store_true", help="Executa simulaÃ§Ã£o completa sem gravar no banco de dados")
     args = parser.parse_args()
 
     agora_sp = datetime.now(TZ_SP)
@@ -180,13 +179,13 @@ def main():
     print(f"=== RoadVision Continuous Feed Pipeline ===")
     print(f"Data/Hora Local: {agora_sp.strftime('%d/%m/%Y %H:%M:%S')} ({TZ_SP})")
     print(f"Data/Hora UTC:   {agora_utc}")
-    print(f"Modo de Execução: {'[DRY-RUN - Apenas Simulação]' if args.dry_run else '[LIVE - Escrita em Supabase]'}")
+    print(f"Modo de ExecuÃ§Ã£o: {'[DRY-RUN - Apenas SimulaÃ§Ã£o]' if args.dry_run else '[LIVE - Escrita em Supabase]'}")
 
     fator_vol, proporcoes_sentido, vel_media = calcular_perfil_diurno_sp055(agora_sp)
     print(f"Perfil Diurno SP-055: Fator de volume={fator_vol:.2f} | Velocidade={vel_media} km/h")
-    print(f"Distribuição de Sentidos: {proporcoes_sentido}")
+    print(f"DistribuiÃ§Ã£o de Sentidos: {proporcoes_sentido}")
 
-    # Consulta câmeras ativas cadastradas no Supabase
+    # Consulta cÃ¢meras ativas cadastradas no Supabase
     client = get_supabase()
     cameras_db = []
     if client:
@@ -194,16 +193,16 @@ def main():
             res = client.table("cameras").select("id, nome, km, ativa").execute()
             cameras_db = res.data or []
         except Exception as e:
-            print(f"[Aviso] Falha ao consultar câmeras do Supabase: {e}")
+            print(f"[Aviso] Falha ao consultar cÃ¢meras do Supabase: {e}")
 
-    # Câmeras alvo (se não houver banco conectado, usa IDs conhecidos para dry-run)
+    # CÃ¢meras alvo (se nÃ£o houver banco conectado, usa IDs conhecidos para dry-run)
     if not cameras_db:
         cameras_db = [
             {"id": "aa708460-ea62-48f2-b924-e5e058e3ed89", "nome": "DER SP - Camera 36", "km": "055+000", "camera_der_id": 36},
             {"id": "5144fc7b-a590-4de3-b338-700bda1ef368", "nome": "DER SP - Camera 14", "km": "211+000", "camera_der_id": 14}
         ]
 
-    print(f"Câmeras identificadas para alimentação: {len(cameras_db)}")
+    print(f"CÃ¢meras identificadas para alimentaÃ§Ã£o: {len(cameras_db)}")
 
     payload_minuto = []
     payload_sentido = []
@@ -221,12 +220,10 @@ def main():
             "motos": contagem["motos"],
             "onibus": contagem["onibus"],
             "caminhoes": contagem["caminhoes"],
-            "velocidade_media": vel_media,
-            "contagem_valida": True
         }
         payload_minuto.append(row_minuto)
 
-        # Divisão por sentido (ex: Ubatuba e Maranduba)
+        # DivisÃ£o por sentido (ex: Ubatuba e Maranduba)
         for sentido, prop in proporcoes_sentido.items():
             row_sentido = {
                 "camera_id": cam_id,
@@ -239,20 +236,20 @@ def main():
             }
             payload_sentido.append(row_sentido)
 
-        print(f"  -> {cam_nome}: Total={contagem['total']} veíc "
+        print(f"  -> {cam_nome}: Total={(contagem['carros'] + contagem['motos'] + contagem['onibus'] + contagem['caminhoes'])} veÃ­c "
               f"(Carros={contagem['carros']}, Motos={contagem['motos']}, "
-              f"Ônibus={contagem['onibus']}, Caminhões={contagem['caminhoes']})")
+              f"Ã”nibus={contagem['onibus']}, CaminhÃµes={contagem['caminhoes']})")
 
-    # Inserções no Supabase
+    # InserÃ§Ãµes no Supabase
     if args.dry_run:
-        print("\n[DRY-RUN] Nenhuma gravação executada no Supabase.")
+        print("\n[DRY-RUN] Nenhuma gravaÃ§Ã£o executada no Supabase.")
         print(f"[DRY-RUN] Registros contagens_minuto gerados: {len(payload_minuto)}")
         print(f"[DRY-RUN] Registros contagens_por_sentido gerados: {len(payload_sentido)}")
         storage_status = sincronizar_storage(client, dry_run=True)
         print(f"[DRY-RUN] {storage_status}")
     else:
         if not client:
-            print("[ERRO] Supabase não está configurado. Abortando gravação.")
+            print("[ERRO] Supabase nÃ£o estÃ¡ configurado. Abortando gravaÃ§Ã£o.")
             sys.exit(1)
 
         try:
@@ -275,3 +272,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
