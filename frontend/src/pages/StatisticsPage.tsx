@@ -190,7 +190,10 @@ export const StatisticsPage: React.FC = () => {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(val: number) => [formatNumber(val), 'Veículos']} />
+                        <Tooltip
+                          formatter={(val: number, name: string) => [formatNumber(val), name || 'Veículos']}
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
@@ -224,7 +227,10 @@ export const StatisticsPage: React.FC = () => {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                         <XAxis dataKey="nome_curto" stroke="#94A3B8" fontSize={11} tickLine={false} />
                         <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} tickFormatter={(val) => `${val}`} />
-                        <Tooltip formatter={(val: number) => [formatNumber(val), '']} />
+                        <Tooltip
+                          formatter={(val: number, name: string) => [formatNumber(val), name]}
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        />
                         <Bar dataKey="carros" stackId="a" fill="#0284c7" name="Carros" />
                         <Bar dataKey="motos" stackId="a" fill="#f97316" name="Motos" />
                         <Bar dataKey="onibus" stackId="a" fill="#06b6d4" name="Ônibus" />

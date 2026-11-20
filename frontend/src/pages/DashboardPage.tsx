@@ -9,7 +9,17 @@ import {
   Bus,
   Truck,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  BrainCircuit,
+  Clock,
+  PieChart as PieIcon,
+  MapPin,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ShieldCheck,
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 import {
   PieChart,
@@ -25,12 +35,13 @@ import {
 } from 'recharts';
 import { StatCard } from '../components/StatCard';
 import { fetchDashboardData } from '../services/api';
-import { DashboardMetrics, CategoryShare, HourlyFlowItem } from '../types';
+import { DashboardMetrics, CategoryShare, HourlyFlowItem, AnaliseInteligente } from '../types';
 
 export const DashboardPage: React.FC = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [categories, setCategories] = useState<CategoryShare[]>([]);
   const [hourlyFlow, setHourlyFlow] = useState<HourlyFlowItem[]>([]);
+  const [analise, setAnalise] = useState<AnaliseInteligente | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -42,6 +53,9 @@ export const DashboardPage: React.FC = () => {
         setMetrics(data.metrics);
         setCategories(data.categories);
         setHourlyFlow(data.hourly_flow);
+        if (data.analise_inteligente) {
+          setAnalise(data.analise_inteligente);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -132,9 +146,9 @@ export const DashboardPage: React.FC = () => {
           iconColor="text-rose-500"
         />
         <StatCard
-          title="KM MONITORADOS"
-          value={metrics.km_monitorados}
-          subtitle={`${metrics.rodovias_ativas} rodovia ativa`}
+          title="EXTENSÃO DO TRECHO CADASTRADO"
+          value="156 km"
+          subtitle="SP-055 Rio-Santos • Cobertura efetiva em tempo real: Não disponível"
           icon={<Gauge className="w-5 h-5" />}
           iconBgColor="bg-amber-50"
           iconColor="text-amber-600"
@@ -314,6 +328,258 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Seção: Análise Inteligente da Rodovia */}
+      {analise && (
+        <div className="space-y-4 pt-2">
+          {/* Cabeçalho da Seção */}
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-sky-50 text-sky-700 rounded-xl border border-sky-100 shadow-2xs">
+              <BrainCircuit className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                Análise Inteligente da Rodovia
+                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-800 border border-sky-200">
+                  IA & Analytics
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Transformação qualitativa dos dados reais de contagem da SP-055 com critérios operacionais documentados.
+              </p>
+            </div>
+          </div>
+
+          {/* Grid de 6 Dimensões Analíticas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 1. Intensidade do Fluxo */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    INTENSIDADE DO FLUXO
+                  </span>
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
+                      analise.intensidade.classificacao === 'Baixo'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : analise.intensidade.classificacao === 'Moderado'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : analise.intensidade.classificacao === 'Intenso'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {analise.intensidade.classificacao}
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+                  {analise.intensidade.taxa_media_veic_h !== null && analise.intensidade.taxa_media_veic_h !== undefined
+                    ? `${analise.intensidade.taxa_media_veic_h.toFixed(1)} veíc/h`
+                    : '—'}
+                </div>
+                <p className="text-xs text-slate-500 mb-3 font-medium">
+                  {analise.intensidade.criterio_documentado}
+                </p>
+              </div>
+              <p className="text-xs text-slate-600 bg-slate-50/80 border border-slate-100 p-2.5 rounded-lg">
+                {analise.intensidade.detalhes}
+              </p>
+            </div>
+
+            {/* 2. Horários de Maior Movimento */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    HORÁRIOS DE PICO
+                  </span>
+                  <div className="p-1 bg-sky-50 text-sky-600 rounded-md">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+                  {analise.horarios_pico.janela_pico || 'Sem registros'}
+                </div>
+                <p className="text-xs text-slate-500 mb-3 font-medium">
+                  {analise.horarios_pico.periodo_analisado}
+                </p>
+              </div>
+              <p className="text-xs text-slate-600 bg-slate-50/80 border border-slate-100 p-2.5 rounded-lg">
+                {analise.horarios_pico.texto}
+              </p>
+            </div>
+
+            {/* 3. Composição do Tráfego */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    COMPOSIÇÃO DO TRÁFEGO
+                  </span>
+                  <div className="p-1 bg-indigo-50 text-indigo-600 rounded-md">
+                    <PieIcon className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+                  {analise.composicao.categoria_lider}
+                  {analise.composicao.percentual_lider > 0 && (
+                    <span className="text-base font-normal text-slate-500 ml-2">
+                      ({analise.composicao.percentual_lider}%)
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {Object.entries(analise.composicao.distribuicao).map(([cat, pct]) => (
+                    <span
+                      key={cat}
+                      className="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-medium"
+                    >
+                      {cat}: {pct}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 bg-slate-50/80 border border-slate-100 p-2.5 rounded-lg">
+                {analise.composicao.texto}
+              </p>
+            </div>
+
+            {/* 4. Pontos de Maior Movimentação */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    PONTOS DE MAIOR MOVIMENTAÇÃO
+                  </span>
+                  <div className="p-1 bg-amber-50 text-amber-600 rounded-md">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                </div>
+                {analise.pontos_movimentacao.ranking.length > 0 ? (
+                  <div className="space-y-1.5 mb-3">
+                    {analise.pontos_movimentacao.ranking.slice(0, 3).map((p, idx) => (
+                      <div
+                        key={p.camera_id}
+                        className="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0"
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-[10px]">
+                            {idx + 1}
+                          </span>
+                          <span className="font-medium text-slate-800 truncate">{p.nome}</span>
+                        </div>
+                        <span className="text-slate-500 font-semibold shrink-0">
+                          {p.total_veiculos} ({p.percentual}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm font-medium text-slate-400 mb-3">
+                    Nenhuma câmera com contagens no período.
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 bg-slate-50/80 border border-slate-100 p-2.5 rounded-lg">
+                {analise.pontos_movimentacao.texto}
+              </p>
+            </div>
+
+            {/* 5. Tendência do Tráfego */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    TENDÊNCIA DO TRÁFEGO
+                  </span>
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 ${
+                      analise.tendencia.classificacao === 'Aumento'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : analise.tendencia.classificacao === 'Redução'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : analise.tendencia.classificacao === 'Estabilidade'
+                        ? 'bg-sky-50 text-sky-700 border-sky-200'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {analise.tendencia.classificacao === 'Aumento' && <TrendingUp className="w-3.5 h-3.5" />}
+                    {analise.tendencia.classificacao === 'Redução' && <TrendingDown className="w-3.5 h-3.5" />}
+                    {analise.tendencia.classificacao === 'Estabilidade' && <Minus className="w-3.5 h-3.5" />}
+                    {analise.tendencia.classificacao}
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+                  {analise.tendencia.variacao_percentual !== null && analise.tendencia.variacao_percentual !== undefined
+                    ? `${analise.tendencia.variacao_percentual > 0 ? '+' : ''}${analise.tendencia.variacao_percentual.toFixed(1)}%`
+                    : '—'}
+                </div>
+                <p className="text-xs text-slate-500 mb-3 font-medium">
+                  {analise.tendencia.volume_atual > 0 || analise.tendencia.volume_anterior > 0
+                    ? `Janela atual: ${analise.tendencia.volume_atual} | Janela anterior: ${analise.tendencia.volume_anterior}`
+                    : 'Período comparativo insuficiente'}
+                </p>
+              </div>
+              <p className="text-xs text-slate-600 bg-slate-50/80 border border-slate-100 p-2.5 rounded-lg">
+                {analise.tendencia.texto}
+              </p>
+            </div>
+
+            {/* 6. Confiabilidade dos Dados */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    CONFIABILIDADE DOS DADOS
+                  </span>
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 ${
+                      analise.confiabilidade.score === 'Alta'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : analise.confiabilidade.score === 'Parcial'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Score {analise.confiabilidade.score}
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+                  {analise.confiabilidade.total_registros} registros
+                </div>
+                <p className="text-xs text-slate-500 mb-3 font-medium">
+                  {analise.confiabilidade.cameras_com_dados} de {analise.confiabilidade.total_cameras_cadastradas} câmeras com contagens no Supabase
+                </p>
+              </div>
+              <p className="text-xs text-slate-600 bg-slate-50/80 border border-slate-100 p-2.5 rounded-lg">
+                {analise.confiabilidade.detalhes}
+              </p>
+            </div>
+          </div>
+
+          {/* Card de Observações Automáticas */}
+          {analise.observacoes_automaticas && analise.observacoes_automaticas.length > 0 && (
+            <div className="bg-gradient-to-r from-sky-50/50 via-white to-slate-50 border border-sky-100 rounded-xl p-5 shadow-2xs">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="w-4 h-4 text-sky-600" />
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  OBSERVAÇÕES OPERACIONAIS AUTOMATIZADAS
+                </h3>
+              </div>
+              <ul className="space-y-2">
+                {analise.observacoes_automaticas.map((obs, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-1.5 shrink-0" />
+                    <span>{obs}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

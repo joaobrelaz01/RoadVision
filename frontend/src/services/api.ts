@@ -7,7 +7,9 @@ import {
   CameraComparisonItem,
   ReportItem,
   UserProfile,
-  SystemStatus
+  SystemStatus,
+  AnaliseInteligente,
+  UltimaCapturaResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -16,12 +18,57 @@ export async function fetchDashboardData(): Promise<{
   metrics: DashboardMetrics;
   categories: CategoryShare[];
   hourly_flow: HourlyFlowItem[];
+  analise_inteligente?: AnaliseInteligente;
 }> {
   const res = await fetch(`${API_BASE}/api/dashboard`);
   if (!res.ok) {
     throw new Error(`Falha ao obter dados do Dashboard (${res.status}): ${res.statusText}`);
   }
   return await res.json();
+}
+
+export async function fetchAnaliseInteligente(): Promise<AnaliseInteligente> {
+  const res = await fetch(`${API_BASE}/api/dashboard/analise-inteligente`);
+  if (!res.ok) {
+    throw new Error(`Falha ao obter análise inteligente (${res.status}): ${res.statusText}`);
+  }
+  return await res.json();
+}
+
+export function getLiveCameraUrl(cameraId: string): string {
+  return `${API_BASE}/api/cameras/${encodeURIComponent(cameraId)}/live`;
+}
+
+export async function fetchLiveCameraStatus(cameraId: string): Promise<{
+  camera_id: string;
+  stream_url: string;
+  disponivel: boolean;
+  status_code?: number;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/api/cameras/${encodeURIComponent(cameraId)}/live/status`);
+    if (!res.ok) {
+      return { camera_id: cameraId, stream_url: '', disponivel: false };
+    }
+    return await res.json();
+  } catch {
+    return { camera_id: cameraId, stream_url: '', disponivel: false };
+  }
+}
+
+export async function fetchUltimaCaptura(cameraId?: string): Promise<UltimaCapturaResponse> {
+  const url = cameraId && cameraId !== 'todas'
+    ? `${API_BASE}/api/cameras/${encodeURIComponent(cameraId)}/ultima-captura`
+    : `${API_BASE}/api/cameras/ultima-captura`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Falha ao obter última captura (${res.status}): ${res.statusText}`);
+  }
+  const data: UltimaCapturaResponse = await res.json();
+  if (data.image_url && data.image_url.startsWith('/api/')) {
+    data.image_url = `${API_BASE}${data.image_url}`;
+  }
+  return data;
 }
 
 export async function fetchCameras(): Promise<Camera[]> {

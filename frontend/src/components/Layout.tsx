@@ -12,7 +12,8 @@ import {
   Moon,
   Sun,
   Database,
-  ChevronDown
+  ChevronDown,
+  Crown
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -27,7 +28,7 @@ export const Layout: React.FC<LayoutProps> = ({
   children
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [userRole, setUserRole] = useState<'Administrador' | 'Operador' | 'Visualizador'>('Administrador');
+  const [userRole, setUserRole] = useState<'Operador Master' | 'Administrador' | 'Operador' | 'Visualizador'>('Operador Master');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const menuItems = [
@@ -137,6 +138,13 @@ export const Layout: React.FC<LayoutProps> = ({
             </button>
 
             <div className="flex items-center gap-4">
+              {userRole === 'Operador Master' && (
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs">
+                  <Crown className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Operador Master (Acesso Irrestrito)</span>
+                </span>
+              )}
+
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span>Visualizar como</span>
                 <div className="relative">
@@ -145,6 +153,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     onChange={(e) => setUserRole(e.target.value as any)}
                     className="appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md py-1.5 pl-3 pr-8 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
                   >
+                    <option value="Operador Master">👑 Operador Master</option>
                     <option value="Administrador">Administrador</option>
                     <option value="Operador">Operador</option>
                     <option value="Visualizador">Visualizador</option>
